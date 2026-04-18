@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: hallame-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: hallame_user
+      POSTGRES_PASSWORD: super_secret_password
+      POSTGRES_DB: hallame_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - hallame-pgdata:/var/lib/postgresql/data
+
+volumes:
+  hallame-pgdata:

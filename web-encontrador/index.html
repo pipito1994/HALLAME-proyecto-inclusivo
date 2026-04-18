@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hallame - Perfil de Emergencia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0A0F1C;
+            --card-bg: rgba(19, 27, 47, 0.7);
+            --primary: #3B82F6;
+            --success: #10B981;
+            --error: #EF4444;
+            --text-main: #FFFFFF;
+            --text-muted: #94A3B8;
+            --border: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        /* Abstract Background shapes */
+        .bg-glow {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            filter: blur(120px);
+            opacity: 0.15;
+            z-index: -1;
+            top: 10%;
+            right: 10%;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 32px;
+            padding: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .profile-header {
+            margin-bottom: 24px;
+        }
+
+        .avatar-container {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, var(--primary), #60A5FA);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            font-weight: 800;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+
+        .profile-name {
+            font-size: 28px;
+            font-weight: 800;
+            margin-bottom: 4px;
+            letter-spacing: -0.5px;
+        }
+
+        .profile-diagnosis {
+            color: var(--error);
+            font-weight: 600;
+            background: rgba(239, 68, 68, 0.1);
+            padding: 4px 12px;
+            border-radius: 99px;
+            display: inline-block;
+            font-size: 14px;
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            font-weight: 700;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-value:last-child { margin-bottom: 0; }
+
+        .btn {
+            width: 100%;
+            padding: 18px;
+            border-radius: 20px;
+            border: none;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.2);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            background: #2563EB;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--text-main);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            background: #059669;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            color: var(--text-muted);
+            font-size: 13px;
+            margin-top: 16px;
+        }
+
+        .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        #error-view { display: none; }
+        #profile-view { display: none; }
+        #loading-view { display: block; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--success);
+            padding: 12px 24px;
+            border-radius: 99px;
+            font-weight: 600;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+    </style>
+</head>
+<body>
+    <div class="bg-glow"></div>
+    
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading-view" class="card">
+            <div class="avatar-container" style="background: var(--border); animation: pulse 1.5s infinite;"></div>
+            <div style="height: 20px; background: var(--border); border-radius: 10px; width: 60%; margin: 10px auto;"></div>
+            <p style="color: var(--text-muted)">Cargando perfil de emergencia...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error-view" class="card">
+            <h2 style="color: var(--error); margin-bottom: 12px;">Oops!</h2>
+            <p id="error-message">No se pudo encontrar este perfil o el código es inválido.</p>
+            <button class="btn btn-outline" style="margin-top: 20px;" onclick="location.reload()">Reintentar</button>
+        </div>
+
+        <!-- Main Profile View -->
+        <div id="profile-view">
+            <div class="card">
+                <div class="profile-header">
+                    <div id="avatar" class="avatar-container">H</div>
+                    <h1 id="name" class="profile-name">Cargando...</h1>
+                    <span id="diagnosis" class="profile-diagnosis">Diagnóstico</span>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-label">Contactos de Emergencia</div>
+                    <div id="contacts-list">
+                        <!-- Contacts go here -->
+                    </div>
+                </div>
+
+                <button id="btn-location" class="btn btn-primary">
+                    <div id="location-spinner" class="loading-spinner"></div>
+                    <span id="location-text">📍 Compartir mi ubicación</span>
+                </button>
+
+                <button id="btn-emergency" class="btn btn-outline">
+                    🚨 Servicios de Emergencia avisados
+                </button>
+
+                <div class="status-badge">
+                    <div style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></div>
+                    Tus coordenadas se enviarán de forma segura
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast">¡Ubicación enviada con éxito!</div>
+
+    <script>
+        // CONFIGURACIÓN: El usuario debe cambiar esta URL por su URL de Cloudflare Tunnel
+        const BACKEND_URL = "https://sequence-thrown-coat-stem.trycloudflare.com"; 
+
+        const loadingView = document.getElementById('loading-view');
+        const errorView = document.getElementById('error-view');
+        const profileView = document.getElementById('profile-view');
+        const btnLocation = document.getElementById('btn-location');
+        const btnEmergency = document.getElementById('btn-emergency');
+        const locationText = document.getElementById('location-text');
+        const locationSpinner = document.getElementById('location-spinner');
+        const toast = document.getElementById('toast');
+
+        // Extraer UUID de la URL (soporta /scan/ID o ?id=ID)
+        function getQrUuid() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            if (id) return id;
+            
+            const pathParts = window.location.pathname.split('/');
+            const scanIndex = pathParts.indexOf('scan');
+            if (scanIndex !== -1 && pathParts[scanIndex + 1]) {
+                return pathParts[scanIndex + 1];
+            }
+            return null;
+        }
+
+        const qrUuid = getQrUuid();
+
+        async function init() {
+            if (!qrUuid) {
+                showError("Código QR no válido o no detectado.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${BACKEND_URL}/profiles/scan/${qrUuid}`);
+                if (!response.ok) throw new Error("Perfil no encontrado");
+                
+                const data = await response.json();
+                renderProfile(data);
+            } catch (error) {
+                showError("Error al conectar con el servidor. Verifica que el backend esté corriendo.");
+            }
+        }
+
+        function renderProfile(data) {
+            document.getElementById('name').textContent = data.fullName;
+            document.getElementById('avatar').textContent = data.fullName.charAt(0);
+            document.getElementById('diagnosis').textContent = data.diagnosis || "Sin diagnóstico especificado";
+            
+            const list = document.getElementById('contacts-list');
+            list.innerHTML = '';
+            
+            if (data.emergencyContact) {
+                list.innerHTML += `<div class="info-value">📞 <a href="tel:${data.emergencyContact}" style="color: inherit; text-decoration: none;">${data.emergencyContact} (Principal)</a></div>`;
+            }
+            if (data.emergencyContact2) {
+                list.innerHTML += `<div class="info-value">📱 <a href="tel:${data.emergencyContact2}" style="color: inherit; text-decoration: none;">${data.emergencyContact2} (Alt)</a></div>`;
+            }
+
+            loadingView.style.display = 'none';
+            profileView.style.display = 'block';
+        }
+
+        function showError(msg) {
+            loadingView.style.display = 'none';
+            errorView.style.display = 'block';
+            document.getElementById('error-message').textContent = msg;
+        }
+
+        function showToast(msg, isError = false) {
+            toast.textContent = msg;
+            toast.style.background = isError ? 'var(--error)' : 'var(--success)';
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        btnLocation.onclick = () => {
+            if (!navigator.geolocation) {
+                showToast("Tu navegador no soporta GPS", true);
+                return;
+            }
+
+            btnLocation.disabled = true;
+            locationText.textContent = "Obteniendo GPS...";
+            locationSpinner.style.display = 'block';
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    try {
+                        const res = await fetch(`${BACKEND_URL}/profiles/scan/${qrUuid}/location`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude
+                            })
+                        });
+
+                        if (res.ok) {
+                            showToast("¡Ubicación enviada al cuidador!");
+                        } else {
+                            throw new Error();
+                        }
+                    } catch (e) {
+                        showToast("Error al enviar ubicación", true);
+                    } finally {
+                        btnLocation.disabled = false;
+                        locationText.textContent = "📍 Compartir mi ubicación";
+                        locationSpinner.style.display = 'none';
+                    }
+                },
+                (err) => {
+                    showToast("Permiso denegado para el GPS", true);
+                    btnLocation.disabled = false;
+                    locationText.textContent = "📍 Compartir mi ubicación";
+                    locationSpinner.style.display = 'none';
+                }
+            );
+        };
+
+        btnEmergency.onclick = () => {
+            btnEmergency.style.background = 'rgba(16, 185, 129, 0.2)';
+            btnEmergency.style.borderColor = 'var(--success)';
+            btnEmergency.style.color = 'var(--success)';
+            btnEmergency.innerHTML = '✅ Alerta enviada a servicios';
+            showToast("Aviso enviado. ¡Gracias por ayudar!");
+            btnEmergency.disabled = true;
+        };
+
+        init();
+    </script>
+</body>
+</html>
