@@ -5,7 +5,7 @@ class AppConfig {
 
   /// URL Base de la Web del Encontrador.
   /// CAMBIAR por tu URL de Cloudflare Tunnel.
-  static const String webBaseUrl = "https://pride-voltage-allergy-hearings.trycloudflare.com"; 
+  static const String webBaseUrl = "https://hallame-web.vercel.app"; 
 
   /// Genera la URL para el QR.
   static String getQrUrl(String qrUuid) {
