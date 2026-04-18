@@ -5,12 +5,19 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Habilitar CORS para permitir que la Web App (Next.js) haga peticiones
   app.enableCors({
-    origin: '*', // En producción, cambiar por el dominio real de la Web App
+    origin: '*',
   });
   
-  await app.listen(process.env.PORT ?? 3002);
-  console.log(`Application is running on: http://localhost:3002`);
+  const port = process.env.PORT ?? 3002;
+  await app.listen(port);
+  return app;
 }
-bootstrap();
+
+// Para despliegue tradicional
+if (process.env.NODE_ENV !== 'production') {
+  bootstrap();
+}
+
+// Para Vercel (opcional: algunos prefieren exportar el handler)
+export default bootstrap;
