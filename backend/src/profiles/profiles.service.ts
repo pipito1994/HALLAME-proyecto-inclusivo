@@ -41,12 +41,29 @@ export class ProfilesService {
     return newProfile;
   }
 
-  async update(id: string, data: { encryptedData?: string; isActive?: boolean }) {
+  async findAllByUser(userId: string) {
+    if (process.env.MOCK_MODE === 'true') {
+      return this.mockProfiles.filter(p => p.userId === userId);
+    }
+    const db = this.firebaseService.db;
+    const snapshot = await db.collection('profiles').where('userId', '==', userId).get();
+    return snapshot.docs.map(doc => doc.data());
+  }
+
+  async update(id: string, userId: string, data: { encryptedData?: string; isActive?: boolean }) {
+    if (process.env.MOCK_MODE === 'true') {
+      const index = this.mockProfiles.findIndex(p => p.id === id && p.userId === userId);
+      if (index === -1) throw new NotFoundException('Perfil no encontrado o sin permisos');
+      this.mockProfiles[index] = { ...this.mockProfiles[index], ...data, updatedAt: new Date().toISOString() };
+      return this.mockProfiles[index];
+    }
+
     const db = this.firebaseService.db;
     const profileRef = db.collection('profiles').doc(id);
     const doc = await profileRef.get();
     
     if (!doc.exists) throw new NotFoundException('Perfil no encontrado');
+    if (doc.data()?.userId !== userId) throw new NotFoundException('No tienes permiso para editar este perfil');
 
     await profileRef.update({
       ...data,

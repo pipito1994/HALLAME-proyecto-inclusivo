@@ -1,6 +1,7 @@
-import { Controller, Post, Body, Patch, Param, Get, Req, NotFoundException, Headers, Ip } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Param, Get, Req, NotFoundException, Headers, Ip, UseGuards, Query } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { EncryptionService } from '../security/encryption.service';
+import { FirebaseAuthGuard } from '../security/firebase-auth.guard';
 
 @Controller('profiles')
 export class ProfilesController {
@@ -10,14 +11,30 @@ export class ProfilesController {
   ) {}
 
   // 1. ENDPOINTS PRIVADOS (Del Cuidador)
-  // Nota: En el futuro esto requerirá validación de JWT (@UseGuards(JwtAuthGuard))
+  
+  @Get()
+  @UseGuards(FirebaseAuthGuard)
+  async listProfiles(@Req() req: any) {
+    const userId = req.user.uid;
+    const profiles = await this.profilesService.findAllByUser(userId);
+    
+    // Desencriptar datos para la lista de la App
+    return profiles.map(profile => {
+      const decryptedData = this.encryptionService.decrypt(profile.encryptedData);
+      return {
+        ...profile,
+        ...decryptedData,
+        // No enviamos el encryptedData original para ahorrar ancho de banda
+        encryptedData: undefined, 
+      };
+    });
+  }
 
   @Post()
-  async createProfile(@Body() body: any) {
-    // Simulamos un userId por ahora
-    const mockUserId = '11111111-1111-1111-1111-111111111111'; 
+  @UseGuards(FirebaseAuthGuard)
+  async createProfile(@Req() req: any, @Body() body: any) {
+    const userId = req.user.uid;
 
-    // Encriptamos los datos sensibles
     const dataToEncrypt = {
       fullName: body.fullName,
       diagnosis: body.diagnosis,
@@ -27,7 +44,7 @@ export class ProfilesController {
     
     const encryptedData = this.encryptionService.encrypt(dataToEncrypt);
 
-    const profile = await this.profilesService.create(mockUserId, encryptedData);
+    const profile = await this.profilesService.create(userId, encryptedData);
     
     return { 
       message: 'Perfil creado exitosamente', 
@@ -37,8 +54,9 @@ export class ProfilesController {
   }
 
   @Patch(':id')
-  async updateProfile(@Param('id') id: string, @Body() body: any) {
-    // Validar propiedad del perfil (pendiente de auth)
+  @UseGuards(FirebaseAuthGuard)
+  async updateProfile(@Param('id') id: string, @Req() req: any, @Body() body: any) {
+    const userId = req.user.uid;
     
     const dataToEncrypt = {
       fullName: body.fullName,
@@ -49,7 +67,7 @@ export class ProfilesController {
     
     const encryptedData = this.encryptionService.encrypt(dataToEncrypt);
 
-    await this.profilesService.update(id, {
+    await this.profilesService.update(id, userId, {
       encryptedData,
       isActive: body.isActive !== undefined ? body.isActive : true,
     });
