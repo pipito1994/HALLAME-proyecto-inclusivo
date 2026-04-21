@@ -13,7 +13,7 @@ export class ProfilesController {
   // 0. ENDPOINT DE DIAGNÓSTICO
   @Get('ping')
   ping() {
-    return { status: 'ok', message: 'Conexión con el servidor establecida correctamente', timestamp: new Date().toISOString() };
+    return { status: 'ok', message: 'Servidor Hallame en la nube activado y listo', timestamp: new Date().toISOString() };
   }
 
   // 1. ENDPOINTS PRIVADOS (Del Cuidador)

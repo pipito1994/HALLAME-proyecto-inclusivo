@@ -1002,6 +1002,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     String prefix1 = '+56';
     String prefix2 = '+56';
+    bool isCreating = false; // Movido aquí para que sea válido
 
     showDialog(
       context: context,
@@ -1131,9 +1132,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     style: TextStyle(color: Color(0xFF94A3B8)),
                   ),
                 ),
-                bool isCreating = false;
 
-                return ElevatedButton(
+                ElevatedButton(
                   onPressed: isCreating ? null : () async {
                     final newName = nameController.text.trim();
                     final newDiagnosis = diagnosisController.text;
@@ -1377,55 +1377,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Hola, Cuidador',
-                        style: TextStyle(
-                          color: Color(0xFF64748B),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      RichText(
-                        text: const TextSpan(
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Hola, Cuidador',
                           style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1,
-                            color: Color(0xFF1A1A1A),
+                            color: Color(0xFF64748B),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
                           ),
-                          children: [
-                            TextSpan(text: 'Hall'),
-                            TextSpan(
-                              text: 'ame',
-                              style: TextStyle(color: Color(0xFF00BFA5)),
-                            ),
-                          ],
                         ),
+                        const SizedBox(height: 4),
+                        RichText(
+                          text: const TextSpan(
+                            style: TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -1,
+                              color: Color(0xFF1A1A1A),
+                            ),
+                            children: [
+                              TextSpan(text: 'Hall'),
+                              TextSpan(
+                                text: 'ame',
+                                style: TextStyle(color: Color(0xFF00BFA5)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                // Icons Section
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh_rounded, color: Color(0xFF1A1A1A)),
+                      onPressed: _loadProfiles,
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                      tooltip: 'Actualizar lista',
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.lan_outlined, color: Color(0xFF0090C1)),
+                      onPressed: _checkConnection,
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                      tooltip: 'Probar conexión',
+                    ),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.info_outline,
+                        color: Color(0xFF94A3B8),
                       ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.info_outline,
-                      color: Color(0xFF94A3B8),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                      onPressed: () => _showLegalDialog(),
                     ),
-                    onPressed: () => _showLegalDialog(),
-                  ),
-                  IconButton(
-                    icon: const Icon(
-                      Icons.logout_rounded,
-                      color: Color(0xFFFB7185),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Color(0xFFFB7185),
+                      ),
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(8),
+                      onPressed: () async {
+                        await GoogleSignIn().signOut();
+                        await FirebaseAuth.instance.signOut();
+                      },
                     ),
-                    onPressed: () async {
-                      await GoogleSignIn().signOut();
-                      await FirebaseAuth.instance.signOut();
-                    },
-                  ),
-                  GestureDetector(
+                  ],
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
                     onTap: () {
                       setState(() {
                         hasEmergency = !hasEmergency;
@@ -1640,31 +1667,47 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Container(
                           width: 60,
                           height: 60,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
                               colors: [Color(0xFF0090C1), Color(0xFF00BFA5)],
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                             ),
                             shape: BoxShape.circle,
-                            image: profile['photoUrl'] != null
-                                ? DecorationImage(
-                                    image: NetworkImage(profile['photoUrl']),
-                                    fit: BoxFit.cover,
-                                  )
-                                : null,
                           ),
-                          alignment: Alignment.center,
-                          child: profile['photoUrl'] == null
-                              ? Text(
-                                  profile['name'][0],
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
+                          child: ClipOval(
+                            child: profile['photoUrl'] != null && profile['photoUrl'].toString().isNotEmpty
+                                ? Image.network(
+                                    profile['photoUrl'],
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Center(
+                                        child: Text(
+                                          profile['name'] != null && profile['name'].toString().isNotEmpty 
+                                              ? profile['name'][0].toUpperCase() 
+                                              : '?',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Center(
+                                    child: Text(
+                                      profile['name'] != null && profile['name'].toString().isNotEmpty 
+                                          ? profile['name'][0].toUpperCase() 
+                                          : '?',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ),
-                                )
-                              : null,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         Expanded(
@@ -1814,55 +1857,82 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
   Future<void> _confirmDeleteProfile(Map<String, dynamic> profile) async {
+    bool isDeleting = false;
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        title: const Text('¿Eliminar Perfil?', 
-          style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold)),
-        content: Text('¿Realmente deseas eliminar a ${profile['name']}? Esta acción es permanente.', 
-          style: const TextStyle(color: Color(0xFF1A1A1A))),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar', style: TextStyle(color: Color(0xFF64748B))),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFEF4444),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Eliminar'),
-          ),
-        ],
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            backgroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Text('¿Eliminar Perfil?', 
+              style: TextStyle(color: Color(0xFF1A1A1A), fontWeight: FontWeight.bold)),
+            content: Text('¿Realmente deseas eliminar a ${profile['name']}? Esta acción es permanente.', 
+              style: const TextStyle(color: Color(0xFF1A1A1A))),
+            actions: [
+              TextButton(
+                onPressed: isDeleting ? null : () => Navigator.pop(context, false),
+                child: const Text('Cancelar', style: TextStyle(color: Color(0xFF64748B))),
+              ),
+              ElevatedButton(
+                onPressed: isDeleting ? null : () async {
+                  setDialogState(() => isDeleting = true);
+                  try {
+                    final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
+                    final url = Uri.parse('${AppConfig.backendBaseUrl}/profiles/${profile['id']}');
+                    
+                    final response = await http.delete(
+                      url,
+                      headers: {'Authorization': 'Bearer $idToken'},
+                    ).timeout(const Duration(seconds: 10));
+
+                    if (response.statusCode == 200) {
+                      if (context.mounted) Navigator.pop(context, true);
+                    } else if (response.statusCode == 404) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Servidor actualizándose en la nube. Por favor, reintenta en 1 minuto.'),
+                            backgroundColor: Color(0xFF64748B),
+                          ),
+                        );
+                        Navigator.pop(context, false);
+                      }
+                    } else {
+                      throw Exception('Error ${response.statusCode}');
+                    }
+                  } catch (e) {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e'), backgroundColor: const Color(0xFFEF4444)),
+                      );
+                      Navigator.pop(context, false);
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFEF4444),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: isDeleting 
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                  : const Text('Eliminar'),
+              ),
+            ],
+          );
+        }
       ),
     );
 
     if (confirmed == true) {
-      try {
-        final idToken = await FirebaseAuth.instance.currentUser?.getIdToken();
-        final url = Uri.parse('${AppConfig.backendBaseUrl}/profiles/${profile['id']}');
-        
-        final response = await http.delete(
-          url,
-          headers: {'Authorization': 'Bearer $idToken'},
+      setState(() {
+        profiles.removeWhere((p) => p['id'] == profile['id']);
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Perfil eliminado con éxito'), backgroundColor: Color(0xFF00BFA5)),
         );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            profiles.removeWhere((p) => p['id'] == profile['id']);
-          });
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Perfil eliminado'), backgroundColor: Color(0xFF00BFA5)),
-            );
-          }
-        }
-      } catch (e) {
-        debugPrint('Error al eliminar: $e');
       }
     }
   }
