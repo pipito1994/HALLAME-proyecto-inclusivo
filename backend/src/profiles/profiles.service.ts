@@ -123,11 +123,11 @@ export class ProfilesService {
       });
 
       if (profile?.user?.fcmToken) {
-        await this.firebaseService.db.app.messaging().send({
+        await this.firebaseService.messaging.send({
           token: profile.user.fcmToken,
           notification: {
             title: '🚨 ¡Alerta de Escaneo!',
-            body: `Alguien ha escaneado el perfil de ${profile.id}. Revisa la ubicación ahora.`,
+            body: `Alguien ha escaneado el perfil de ${profile.name || profile.id}. Revisa la ubicación ahora.`,
           },
           data: {
             profileId: profile.id,
