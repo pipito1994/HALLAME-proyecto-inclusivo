@@ -7,6 +7,7 @@ export class AppController {
 
   @Get()
   getHello(): string {
-    return 'Servidor Hallame 100% Operativo en la Nube';
+    const now = new Date().toLocaleString('es-CL', { timeZone: 'America/Santiago' });
+    return `Servidor Hallame ONLINE - Última actualización: ${now}`;
   }
 }
