@@ -127,7 +127,7 @@ export class ProfilesService {
           token: profile.user.fcmToken,
           notification: {
             title: '🚨 ¡Alerta de Escaneo!',
-            body: `Alguien ha escaneado el perfil de ${profile.name || profile.id}. Revisa la ubicación ahora.`,
+            body: `Han escaneado un perfil protegido por ti. Revisa la ubicación de inmediato.`,
           },
           data: {
             profileId: profile.id,
