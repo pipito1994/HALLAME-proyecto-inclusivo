@@ -2,3 +2,5 @@ firebase-key.json
 .env
 node_modules/
 dist/
+.vercel
+.env*.local

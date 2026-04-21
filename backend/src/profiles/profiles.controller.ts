@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Patch, Param, Get, Req, NotFoundException, Headers, Ip, UseGuards, Query } from '@nestjs/common';
+import { Controller, Post, Body, Patch, Delete, Param, Get, Req, NotFoundException, Headers, Ip, UseGuards, Query } from '@nestjs/common';
 import { ProfilesService } from './profiles.service';
 import { EncryptionService } from '../security/encryption.service';
 import { FirebaseAuthGuard } from '../security/firebase-auth.guard';
@@ -9,6 +9,12 @@ export class ProfilesController {
     private readonly profilesService: ProfilesService,
     private readonly encryptionService: EncryptionService,
   ) {}
+
+  // 0. ENDPOINT DE DIAGNÓSTICO
+  @Get('ping')
+  ping() {
+    return { status: 'ok', message: 'Conexión con el servidor establecida correctamente', timestamp: new Date().toISOString() };
+  }
 
   // 1. ENDPOINTS PRIVADOS (Del Cuidador)
   
@@ -43,14 +49,23 @@ export class ProfilesController {
     };
     
     const encryptedData = this.encryptionService.encrypt(dataToEncrypt);
+    const photoUrl = body.photoUrl;
 
-    const profile = await this.profilesService.create(userId, encryptedData);
+    const profile = await this.profilesService.create(userId, encryptedData, photoUrl);
     
     return { 
       message: 'Perfil creado exitosamente', 
       qrUuid: profile.qrUuid,
       profileId: profile.id
     };
+  }
+
+  @Patch('fcm-token')
+  @UseGuards(FirebaseAuthGuard)
+  async updateFcmToken(@Req() req: any, @Body() body: { fcmToken: string }) {
+    const userId = req.user.uid;
+    await this.profilesService.updateFcmToken(userId, body.fcmToken);
+    return { success: true, message: 'Notificaciones push activadas correctamente.' };
   }
 
   @Patch(':id')
@@ -70,11 +85,18 @@ export class ProfilesController {
     await this.profilesService.update(id, userId, {
       encryptedData,
       isActive: body.isActive !== undefined ? body.isActive : true,
+      photoUrl: body.photoUrl,
     });
 
     return { success: true, message: 'Perfil actualizado de forma segura.' };
   }
 
+  @Delete(':id')
+  @UseGuards(FirebaseAuthGuard)
+  async deleteProfile(@Param('id') id: string, @Req() req: any) {
+    const userId = req.user.uid;
+    return this.profilesService.remove(id, userId);
+  }
 
   // 2. ENDPOINTS PÚBLICOS (Del Encontrador)
 

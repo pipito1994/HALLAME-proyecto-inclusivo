@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
 import { FirebaseService } from '../firebase/firebase.service';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -6,51 +7,61 @@ import { v4 as uuidv4 } from 'uuid';
 export class ProfilesService {
   private mockProfiles: any[] = [];
 
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(
+    private prisma: PrismaService,
+    private firebaseService: FirebaseService,
+  ) {}
 
-  async create(userId: string, encryptedData: string) {
-    const profileId = uuidv4();
-    const qrUuid = uuidv4();
-
-    const newProfile = {
-      id: profileId,
-      userId,
-      qrUuid,
-      encryptedData,
-      photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Generico',
-      isActive: true,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
+  async create(userId: string, encryptedData: string, photoUrl?: string) {
     if (process.env.MOCK_MODE === 'true') {
+      const newProfile = {
+        id: uuidv4(),
+        userId,
+        qrUuid: uuidv4(),
+        encryptedData,
+        photoUrl: 'https://api.dicebear.com/9.x/avataaars/png?seed=Generico',
+        isActive: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
       this.mockProfiles.push(newProfile);
       return newProfile;
     }
 
-    const db = this.firebaseService.db;
-    // Ensure mock user exists in Firestore
-    await db.collection('users').doc(userId).set({
-      email: 'mock@user.com',
-      fullName: 'Mock User',
-      phoneNumber: '000',
-    }, { merge: true });
+    // Asegurar que el usuario existe en PostgreSQL (sincronizado desde Firebase UID)
+    await this.prisma.user.upsert({
+      where: { id: userId },
+      update: {},
+      create: {
+        id: userId,
+        email: 'user@hallame.com', 
+        fullName: 'Usuario Hallame',
+        phoneNumber: '000',
+        passwordHash: 'firebase-auth', // Es autenticado por Firebase
+      },
+    });
 
-    await db.collection('profiles').doc(profileId).set(newProfile);
-    
-    return newProfile;
+    return this.prisma.profile.create({
+      data: {
+        userId: userId,
+        encryptedData: encryptedData,
+        photoUrl: photoUrl || 'https://api.dicebear.com/9.x/avataaars/png?seed=Generico',
+        isActive: true,
+      },
+    });
   }
 
   async findAllByUser(userId: string) {
     if (process.env.MOCK_MODE === 'true') {
       return this.mockProfiles.filter(p => p.userId === userId);
     }
-    const db = this.firebaseService.db;
-    const snapshot = await db.collection('profiles').where('userId', '==', userId).get();
-    return snapshot.docs.map(doc => doc.data());
+    return this.prisma.profile.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
-  async update(id: string, userId: string, data: { encryptedData?: string; isActive?: boolean }) {
+  async update(id: string, userId: string, data: { encryptedData?: string; isActive?: boolean; photoUrl?: string }) {
     if (process.env.MOCK_MODE === 'true') {
       const index = this.mockProfiles.findIndex(p => p.id === id && p.userId === userId);
       if (index === -1) throw new NotFoundException('Perfil no encontrado o sin permisos');
@@ -58,19 +69,16 @@ export class ProfilesService {
       return this.mockProfiles[index];
     }
 
-    const db = this.firebaseService.db;
-    const profileRef = db.collection('profiles').doc(id);
-    const doc = await profileRef.get();
-    
-    if (!doc.exists) throw new NotFoundException('Perfil no encontrado');
-    if (doc.data()?.userId !== userId) throw new NotFoundException('No tienes permiso para editar este perfil');
-
-    await profileRef.update({
-      ...data,
-      updatedAt: new Date().toISOString(),
-    });
-
-    return { id, ...doc.data(), ...data };
+    try {
+      return await this.prisma.profile.update({
+        where: { id, userId },
+        data: {
+          ...data,
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException('Perfil no encontrado o sin permisos para editar');
+    }
   }
 
   async findByQrUuid(qrUuid: string) {
@@ -78,9 +86,8 @@ export class ProfilesService {
       const profile = this.mockProfiles.find(p => p.qrUuid === qrUuid);
       if (profile) return profile;
 
-      // Fallback para el "Abuelo Juan" si no existe el UUID (para que siempre funcione algo)
       return {
-        id: 'mock-id-123',
+        id: uuidv4(),
         userId: 'mock-user-123',
         qrUuid: qrUuid,
         photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Generico',
@@ -88,12 +95,10 @@ export class ProfilesService {
         encryptedData: 'iv:auth:encryptedText',
       };
     }
-    const db = this.firebaseService.db;
-    const snapshot = await db.collection('profiles').where('qrUuid', '==', qrUuid).limit(1).get();
-    
-    if (snapshot.empty) return null;
-    
-    return snapshot.docs[0].data();
+
+    return this.prisma.profile.findUnique({
+      where: { qrUuid },
+    });
   }
 
   async logScan(profileId: string, ip: string, userAgent: string) {
@@ -101,13 +106,67 @@ export class ProfilesService {
       console.log(`[MOCK LOG] Escaneo registrado para perfil ${profileId} desde IP ${ip}`);
       return;
     }
-    const db = this.firebaseService.db;
-    
-    db.collection('emergencyLogs').add({
-      profileId,
-      ipHash: ip,
-      userAgent,
-      scannedAt: new Date().toISOString(),
-    }).catch(err => console.error('Error logueando escaneo en Firebase:', err));
+
+    await this.prisma.emergencyLog.create({
+      data: {
+        profileId,
+        ipHash: ip,
+        userAgent,
+      },
+    }).catch(err => console.error('Error logueando escaneo en Prisma:', err));
+
+    // ENVIAR NOTIFICACIÓN PUSH AL CUIDADOR
+    try {
+      const profile = await this.prisma.profile.findUnique({
+        where: { id: profileId },
+        include: { user: true }
+      });
+
+      if (profile?.user?.fcmToken) {
+        await this.firebaseService.db.app.messaging().send({
+          token: profile.user.fcmToken,
+          notification: {
+            title: '🚨 ¡Alerta de Escaneo!',
+            body: `Alguien ha escaneado el perfil de ${profile.id}. Revisa la ubicación ahora.`,
+          },
+          data: {
+            profileId: profile.id,
+            type: 'SCAN_ALERT',
+          },
+        });
+        console.log(`[PUSH] Notificación enviada al usuario ${profile.userId}`);
+      }
+    } catch (pushErr) {
+      console.error('Error enviando notificación push:', pushErr);
+    }
+  }
+
+  async updateFcmToken(userId: string, fcmToken: string) {
+    if (process.env.MOCK_MODE === 'true') {
+      console.log(`[MOCK FCM] Token actualizado para ${userId}: ${fcmToken}`);
+      return { success: true };
+    }
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { fcmToken },
+    });
+  }
+
+  async remove(id: string, userId: string) {
+    if (process.env.MOCK_MODE === 'true') {
+      const index = this.mockProfiles.findIndex(p => p.id === id && p.userId === userId);
+      if (index === -1) throw new NotFoundException('Perfil no encontrado');
+      this.mockProfiles.splice(index, 1);
+      return { success: true };
+    }
+
+    try {
+      await this.prisma.profile.delete({
+        where: { id, userId },
+      });
+      return { success: true };
+    } catch (error) {
+      throw new NotFoundException('Perfil no encontrado o sin permisos para eliminar');
+    }
   }
 }

@@ -2,22 +2,24 @@ require('dotenv').config();
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+let cachedApp: any;
+
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
-  app.enableCors({
-    origin: '*',
-  });
-  
-  const port = process.env.PORT ?? 3002;
-  await app.listen(port);
-  return app;
+  if (!cachedApp) {
+    const app = await NestFactory.create(AppModule);
+    
+    app.enableCors({
+      origin: '*',
+    });
+    
+    await app.init();
+    cachedApp = app.getHttpAdapter().getInstance();
+  }
+  return cachedApp;
 }
 
-// Para despliegue tradicional
-if (process.env.NODE_ENV !== 'production') {
-  bootstrap();
-}
-
-// Para Vercel (opcional: algunos prefieren exportar el handler)
-export default bootstrap;
+// Exportar el handler para Vercel
+export default async (req: any, res: any) => {
+  const app = await bootstrap();
+  return app(req, res);
+};

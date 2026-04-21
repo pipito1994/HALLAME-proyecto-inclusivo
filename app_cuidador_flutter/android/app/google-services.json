@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "641128834432",
+    "project_id": "hallame-14bf2",
+    "storage_bucket": "hallame-14bf2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:641128834432:android:9b56a964287705b3864d65",
+        "android_client_info": {
+          "package_name": "com.example.app_hallame_flutter"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "641128834432-5vde2k26dhcsmi2p9ci0ltnafqor8rat.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.app_hallame_flutter",
+            "certificate_hash": "ef1d07454fc3a9a5f66aa8103cf90714ee98392f"
+          }
+        },
+        {
+          "client_id": "641128834432-7a776p13c6kitjejpv7jaetpkn8uq31p.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQ8xTn-L57c2__rrxhzGwQ60p7SoeDoIo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "641128834432-7a776p13c6kitjejpv7jaetpkn8uq31p.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
